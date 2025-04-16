@@ -1,3 +1,6 @@
+"""
+低配ai醬，代班Ai醬 --- fastapi 版 是主要版本
+"""
 from fastapi import FastAPI, APIRouter, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from linebot import LineBotApi, WebhookHandler
@@ -159,6 +162,45 @@ def handle_message_wrapper(event):
     import asyncio
     asyncio.create_task(handle_message(event))  # ✅ 建立 background task
 
+async def start_loading_animation(chat_id, loading_seconds=5):
+    """
+    啟動LINE聊天室載入動畫
+    :param chat_id: 聊天室ID
+    :param loading_seconds: 動畫持續時間(秒)，預設5秒
+    :return: (status_code, response) 或 (None, error_message)
+    """
+    if not chat_id:
+        print("錯誤: 缺少chat_id參數")
+        return None, "缺少chat_id參數"
+        
+    url = 'https://api.line.me/v2/bot/chat/loading/start'
+    headers = {
+        'Content-Type': 'application/json',
+        "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
+    }
+    data = {
+        "chatId": chat_id,
+        "loadingSeconds": loading_seconds,
+        "loadingIndicator": {
+            "type": "dots",
+            "text": "正在處理中..."
+        }
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            print(f"成功啟動載入動畫，持續時間: {loading_seconds}秒")
+            return response.status_code, response.json()
+        else:
+            error_msg = f"錯誤: {response.status_code}, {response.text}"
+            print(error_msg)
+            return response.status_code, error_msg
+    except requests.exceptions.RequestException as e:
+        error_msg = f"API請求異常: {str(e)}"
+        print(error_msg)
+        return None, error_msg
+
 async def handle_message(event):
     global conversation_history
     user_id = event.source.user_id
@@ -263,7 +305,9 @@ async def handle_message(event):
             # 群組中 → 使用 reply_message，只支援 同步 API
             line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
         else:
-            # 私人對話 → 改成使用自訂 sender（使用 FastAPI 提供的靜態圖示）
+            # 私人對話 → 先啟動loading動畫
+            start_loading_animation(chat_id=user_id, loading_seconds=5)
+            # 使用自訂 sender（使用 FastAPI 提供的靜態圖示）
             push_custom_sender_message(
                 user_id,
                 reply_text,

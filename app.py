@@ -1,3 +1,6 @@
+"""
+低配ai醬，代班Ai醬
+"""
 import re
 import time
 from flask import Flask, request, abort
@@ -250,9 +253,9 @@ def handle_message(event):
 
     # 回應使用者
     try:
-        # 如果是私人對話，先顯示loading動畫
-        if not isinstance(event.source, (SourceGroup, SourceRoom)):
-            start_loading_animation(user_id)
+        #單人才會顯示 (...)
+        if event.source.type == 'user':
+            start_loading_animation(chat_id=chat_id, loading_seconds=5)
             
         line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
     except LineBotApiError as e:
