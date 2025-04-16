@@ -229,13 +229,43 @@ async def handle_message(event):
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
     # ✅ 回應使用者
+    def push_custom_sender_message(user_id: str, text: str, name: str, icon_url: str):
+        headers = {
+            "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
+            "Content-Type": "application/json"
+        }
+        body = {
+            "to": user_id,
+            "messages": [
+                {
+                    "type": "text",
+                    "text": text,
+                    "sender": {
+                        "name": name,
+                        "iconUrl": icon_url
+                    }
+                }
+            ]
+        }
+        try:
+            res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
+            res.raise_for_status()
+            print(f"✅ 使用自訂 sender 發送成功: {res.status_code}")
+        except Exception as e:
+            print(f"❌ 使用自訂 sender 發送失敗: {e}")
+
     try:
         if isinstance(event.source, (SourceGroup, SourceRoom)):
-            # 在群組或聊天室中 → 必須用 reply_message + reply_token
-            await line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
+            # 群組中 → 使用 reply_message，只支援 同步 API
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
         else:
-            # 一對一私訊 → 可用 push_message
-            line_bot_api.push_message(user_id, TextSendMessage(reply_text))
+            # 私人對話 → 改成使用自訂 sender（使用 FastAPI 提供的靜態圖示）
+            push_custom_sender_message(
+                user_id,
+                reply_text,
+                name="代班",
+                icon_url=f"{base_url}/static/boticon.png"  # ✅ 使用本機靜態檔案提供 HTTPS icon
+            )
     except LineBotApiError as e:
         print(f"LINE 回覆失敗: {e}")
 
