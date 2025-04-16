@@ -1,6 +1,5 @@
-# ✅ 方法二：用 Flex Message 模擬 loading 並簡化原本無效的動畫 API
-# ✅ 本檔已移除無效的 /chat/loading/start API 呼叫
-# ✅ 僅保留 push_message + Flex loading + 回覆 sender 機器人內容
+# ✅ 方法二：使用 LINE 官方 API 顯示載入動畫（/chat/loading/start）取代 Flex Message 模擬
+# ✅ 僅限 1 對 1 私聊中使用此動畫效果
 
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -8,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import *
 from linebot.exceptions import LineBotApiError, InvalidSignatureError
-import os, re, asyncio, httpx, uvicorn
+import os, re, asyncio, httpx, uvicorn, requests
 from contextlib import asynccontextmanager
 from openai import OpenAI
 from groq import Groq
@@ -112,6 +111,18 @@ def push_custom_sender_message(user_id: str, text: str, name: str, icon_url: str
     except Exception as e:
         print(f"❌ 發送失敗: {e}")
 
+def show_loading_animation(user_id: str, seconds: int = 5):
+    try:
+        line_bot_api.start_loading_indicator(
+            user_id,
+            seconds=seconds,
+            indicator_type="dots",
+            text="處理中...請稍候"
+        )
+        print("✅ 載入動畫觸發成功")
+    except LineBotApiError as e:
+        print("❌ 載入動畫錯誤: ", e)
+
 async def handle_message(event):
     global conversation_history
     user_id = event.source.user_id
@@ -163,24 +174,9 @@ async def handle_message(event):
     if not reply_text:
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
-    # ✅ 使用 Flex Bubble 回覆 Loading 效果
     if not is_group_or_room:
-        flex_loading = FlexSendMessage(
-            alt_text="處理中...",
-            contents={
-                "type": "bubble",
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": "🤖 正在準備回答...", "weight": "bold", "size": "md"},
-                        {"type": "text", "text": "請稍候...", "size": "sm", "color": "#888888"}
-                    ]
-                }
-            }
-        )
-        line_bot_api.reply_message(event.reply_token, flex_loading)
-        await asyncio.sleep(0.6)  # 模擬等待時間
+        show_loading_animation(user_id)
+        await asyncio.sleep(0.6)
         push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
     else:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
