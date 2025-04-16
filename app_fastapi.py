@@ -34,6 +34,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# 設定靜態檔案路由
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # SET BASE URL
 base_url = os.getenv("BASE_URL")
 # Channel Access Token
