@@ -163,20 +163,20 @@ async def handle_message(event):
     # 檢查是否為群組或聊天室訊息
     is_group_or_room = isinstance(event.source, (SourceGroup, SourceRoom))
 
-    if is_group_or_room:
-        bot_info = line_bot_api.get_bot_info()
-        bot_name = bot_info.display_name
+    # if is_group_or_room:
+    #     bot_info = line_bot_api.get_bot_info()
+    #     bot_name = bot_info.display_name
 
-        if '@' in msg:
-            at_text = msg.split('@')[1].split()[0] if len(msg.split('@')) > 1 else ''
-            if at_text.lower() not in bot_name.lower():
-                return
-            msg = msg.replace(f'@{at_text}', '').strip()
-        else:
-            return
+    #     if '@' in msg:
+    #         at_text = msg.split('@')[1].split()[0] if len(msg.split('@')) > 1 else ''
+    #         if at_text.lower() not in bot_name.lower():
+    #             return
+    #         msg = msg.replace(f'@{at_text}', '').strip()
+    #     else:
+    #         return
 
-        if not msg:
-            return
+    #     if not msg:
+    #         return
 
     if user_id not in conversation_history:
         conversation_history[user_id] = []
