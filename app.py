@@ -57,6 +57,28 @@ MAX_HISTORY_LEN = 10  # 設定最大對話記憶長度
  whisper-1
  dall-e-2
  """
+def start_loading_animation(chat_id, loading_seconds=5):
+    url = 'https://api.line.me/v2/bot/chat/loading/start'
+    headers = {
+        'Content-Type': 'application/json',
+        "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
+    }
+    data = {
+        "chatId": chat_id,
+        "loadingSeconds": loading_seconds
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.status_code, response.json()  # 回傳JSON格式
+        else:
+            print(f"Error: {response.status_code}, {response.text}")
+            return response.status_code, response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Exception during API request: {e}")
+        return None, str(e)
+
 def get_reply(messages):
     select_model = "gpt-4o-mini"
     print (f"free gpt:{select_model}")
@@ -228,6 +250,10 @@ def handle_message(event):
 
     # 回應使用者
     try:
+        # 如果是私人對話，先顯示loading動畫
+        if not isinstance(event.source, (SourceGroup, SourceRoom)):
+            start_loading_animation(user_id)
+            
         line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
     except LineBotApiError as e:
         print(f"LINE 回覆失敗: {e}")
