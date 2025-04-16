@@ -1,5 +1,6 @@
-# ✅ 方法二：使用 LINE 官方 API 顯示載入動畫（/chat/loading/start）取代 Flex Message 模擬
-# ✅ 僅限 1 對 1 私聊中使用此動畫效果
+"""
+低配版的 LINE BOT - FastAPI 版 ,低配AI醫
+"""
 
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -111,6 +112,7 @@ def push_custom_sender_message(user_id: str, text: str, name: str, icon_url: str
     except Exception as e:
         print(f"❌ 發送失敗: {e}")
 
+# 使用 LINE 官方 API 顯示載入動畫（/chat/loading/start）
 def show_loading_animation(user_id: str, seconds: int = 5):
     url = "https://api.line.me/v2/bot/chat/loading/start"
     headers = {
@@ -136,7 +138,9 @@ async def handle_message(event):
     msg = event.message.text
     is_group_or_room = isinstance(event.source, (SourceGroup, SourceRoom))
 
-    show_loading_animation(user_id)
+    # 僅在 1 對 1 私聊時顯示載入動畫，且只顯示一次
+    if not is_group_or_room:
+        show_loading_animation(user_id)
 
     if user_id not in conversation_history:
         conversation_history[user_id] = []
