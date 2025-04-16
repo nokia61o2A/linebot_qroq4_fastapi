@@ -136,6 +136,8 @@ async def handle_message(event):
     msg = event.message.text
     is_group_or_room = isinstance(event.source, (SourceGroup, SourceRoom))
 
+    show_loading_animation(user_id)
+
     if user_id not in conversation_history:
         conversation_history[user_id] = []
 
@@ -182,8 +184,6 @@ async def handle_message(event):
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
     if not is_group_or_room:
-        show_loading_animation(user_id)
-        await asyncio.sleep(0.6)
         push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
     else:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
