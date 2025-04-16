@@ -112,16 +112,23 @@ def push_custom_sender_message(user_id: str, text: str, name: str, icon_url: str
         print(f"❌ 發送失敗: {e}")
 
 def show_loading_animation(user_id: str, seconds: int = 5):
+    url = "https://api.line.me/v2/bot/chat/loading/start"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}"
+    }
+    data = {
+        "chatId": user_id,
+        "loadingSeconds": seconds
+    }
     try:
-        line_bot_api.start_loading_indicator(
-            user_id,
-            seconds=seconds,
-            indicator_type="dots",
-            text="處理中...請稍候"
-        )
-        print("✅ 載入動畫觸發成功")
-    except LineBotApiError as e:
-        print("❌ 載入動畫錯誤: ", e)
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 202:
+            print("✅ 載入動畫觸發成功")
+        else:
+            print(f"❌ 載入動畫錯誤: {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"❌ 載入動畫請求失敗: {e}")
 
 async def handle_message(event):
     global conversation_history
