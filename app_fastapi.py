@@ -1,7 +1,3 @@
-"""
-低配版的 LINE BOT - FastAPI 版 ,低配AI醫
-"""
-
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -91,28 +87,6 @@ async def get_reply(messages):
         except Exception as e:
             return f"AI 發生錯誤: {str(e)}"
 
-def push_custom_sender_message(user_id: str, text: str, name: str, icon_url: str):
-    headers = {
-        "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
-        "Content-Type": "application/json"
-    }
-    body = {
-        "to": user_id,
-        "messages": [
-            {
-                "type": "text",
-                "text": text,
-                "sender": {"name": name, "iconUrl": icon_url}
-            }
-        ]
-    }
-    try:
-        res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
-        res.raise_for_status()
-    except Exception as e:
-        print(f"❌ 發送失敗: {e}")
-
-# 使用 LINE 官方 API 顯示載入動畫（/chat/loading/start）
 def show_loading_animation(user_id: str, seconds: int = 5):
     url = "https://api.line.me/v2/bot/chat/loading/start"
     headers = {
@@ -135,14 +109,9 @@ def show_loading_animation(user_id: str, seconds: int = 5):
 def calculate_english_ratio(text):
     if not text:
         return 0
-    # 計算英文字符數量
     english_chars = sum(1 for c in text if c.isalpha() and ord(c) < 128)
-    # 計算所有字符數量（不包括空格和標點）
     total_chars = sum(1 for c in text if c.isalpha())
-    # 避免除以零
-    if total_chars == 0:
-        return 0
-    return english_chars / total_chars
+    return english_chars / total_chars if total_chars > 0 else 0
 
 async def handle_message(event):
     global conversation_history
@@ -150,7 +119,6 @@ async def handle_message(event):
     msg = event.message.text
     is_group_or_room = isinstance(event.source, (SourceGroup, SourceRoom))
 
-    # 僅在 1 對 1 私聊時顯示載入動畫，且只顯示一次
     if not is_group_or_room:
         show_loading_animation(user_id)
 
@@ -199,72 +167,24 @@ async def handle_message(event):
     if not reply_text:
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
-    # 檢查英文比例是否超過10%
     english_ratio = calculate_english_ratio(reply_text)
     has_high_english = english_ratio > 0.1
-    
-    # 檢查是否為股票相關查詢
-    is_stock_query = any([msg.lower().startswith("大盤"), 
-                        msg.lower().startswith("台股"),
-                        msg.lower().startswith("美盤"),
-                        msg.lower().startswith("美股"),
-                        stock_code,
-                        stock_symbol])
-    
+
     quick_reply_items = []
     if has_high_english:
-        quick_reply_items.append({
-            "type": "action",
-            "action": {
-                "type": "message",
-                "label": "翻譯成中文",
-                "text": "請將上述內容翻譯成中文"
-            }
-        })
+        quick_reply_items.append(QuickReplyButton(action=MessageAction(label="翻譯成中文", text="請將上述內容翻譯成中文")))
+        quick_reply_items.append(QuickReplyButton(action=MessageAction(label="台股大盤", text="大盤")))
+        quick_reply_items.append(QuickReplyButton(action=MessageAction(label="美股大盤", text="美股")))
 
-    if is_stock_query:
-        quick_reply_items.extend([
-            {
-                "type": "action",
-                "action": {
-                    "type": "message",
-                    "label": "台股大盤",
-                    "text": "大盤"
-                }
-            },
-            {
-                "type": "action",
-                "action": {
-                    "type": "message",
-                    "label": "美股大盤",
-                    "text": "美股"
-                }
-            }
-        ])
-    
     if quick_reply_items:
-        message = {
-            "type": "text",
-            "text": reply_text,
-            "sender": {"name": "代班", "iconUrl": f"{base_url}/static/boticon.png"},
-            "quickReply": {
-                "items": quick_reply_items
-            }
-        }
-        headers = {
-            "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
-            "Content-Type": "application/json"
-        }
-        body = {"to": user_id, "messages": [message]}
-        try:
-            res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
-            res.raise_for_status()
-        except Exception as e:
-            print(f"❌ 發送失敗: {e}")
-            # 發送失敗時使用一般回覆
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
+        reply_message = TextSendMessage(text=reply_text, quick_reply=QuickReply(items=quick_reply_items))
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
+        reply_message = TextSendMessage(text=reply_text)
+
+    try:
+        line_bot_api.reply_message(event.reply_token, reply_message)
+    except LineBotApiError as e:
+        print(f"❌ 回覆訊息失敗: {e}")
 
     conversation_history[user_id].append({"role": "assistant", "content": reply_text})
 
