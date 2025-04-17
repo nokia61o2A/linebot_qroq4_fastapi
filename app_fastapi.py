@@ -203,22 +203,52 @@ async def handle_message(event):
     english_ratio = calculate_english_ratio(reply_text)
     has_high_english = english_ratio > 0.1
     
+    # 檢查是否為股票相關查詢
+    is_stock_query = any([msg.lower().startswith("大盤"), 
+                        msg.lower().startswith("台股"),
+                        msg.lower().startswith("美盤"),
+                        msg.lower().startswith("美股"),
+                        stock_code,
+                        stock_symbol])
+    
     if not is_group_or_room:
+        quick_reply_items = []
         if has_high_english:
-            # 如果英文比例超過10%，添加Quick Reply按鈕
+            quick_reply_items.append({
+                "type": "action",
+                "action": {
+                    "type": "message",
+                    "label": "翻譯成中文",
+                    "text": "請將上述內容翻譯成中文"
+                }
+            })
+        if is_stock_query:
+            quick_reply_items.extend([
+                {
+                    "type": "action",
+                    "action": {
+                        "type": "message",
+                        "label": "台股大盤",
+                        "text": "大盤"
+                    }
+                },
+                {
+                    "type": "action",
+                    "action": {
+                        "type": "message",
+                        "label": "美股大盤",
+                        "text": "美股"
+                    }
+                }
+            ])
+        
+        if quick_reply_items:
             message = {
                 "type": "text",
                 "text": reply_text,
                 "sender": {"name": "代班", "iconUrl": f"{base_url}/static/boticon.png"},
                 "quickReply": {
-                    "items": [{
-                        "type": "action",
-                        "action": {
-                            "type": "message",
-                            "label": "翻譯成中文",
-                            "text": "請將上述內容翻譯成中文"
-                        }
-                    }]
+                    "items": quick_reply_items
                 }
             }
             headers = {
