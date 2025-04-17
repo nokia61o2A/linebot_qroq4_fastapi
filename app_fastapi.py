@@ -140,6 +140,9 @@ async def handle_message(event):
             reply_text = stock_gpt("大盤")
         elif msg.lower().startswith("美盤") or msg.lower().startswith("美股"):
             reply_text = stock_gpt("美盤")
+        elif msg.startswith("cb:") or msg.startswith("$:"):
+            coin_id = msg[3:].strip() if msg.startswith("cb:") else msg[2:].strip()
+            reply_text = crypto_gpt(coin_id)
         elif stock_code:
             reply_text = stock_gpt(stock_code.group())
         elif stock_symbol:
@@ -156,9 +159,6 @@ async def handle_message(event):
             reply_text = one04_gpt(msg[4:])
         elif msg.startswith("pt:"):
             reply_text = partjob_gpt(msg[3:])
-        elif msg.startswith("cb:") or msg.startswith("$:"):
-            coin_id = msg[3:].strip() if msg.startswith("cb:") else msg[2:].strip()
-            reply_text = crypto_gpt(coin_id)
         else:
             reply_text = await get_reply(conversation_history[user_id][-MAX_HISTORY_LEN:])
     except Exception as e:
