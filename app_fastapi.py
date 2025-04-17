@@ -132,6 +132,18 @@ def show_loading_animation(user_id: str, seconds: int = 5):
     except Exception as e:
         print(f"❌ 載入動畫請求失敗: {e}")
 
+def calculate_english_ratio(text):
+    if not text:
+        return 0
+    # 計算英文字符數量
+    english_chars = sum(1 for c in text if c.isalpha() and ord(c) < 128)
+    # 計算所有字符數量（不包括空格和標點）
+    total_chars = sum(1 for c in text if c.isalpha())
+    # 避免除以零
+    if total_chars == 0:
+        return 0
+    return english_chars / total_chars
+
 async def handle_message(event):
     global conversation_history
     user_id = event.source.user_id
@@ -187,12 +199,13 @@ async def handle_message(event):
     if not reply_text:
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
-    # 檢查回覆是否為純英文
-    is_english_only = all(ord(c) < 128 for c in ''.join(c for c in reply_text if c.isalpha()))
+    # 檢查英文比例是否超過10%
+    english_ratio = calculate_english_ratio(reply_text)
+    has_high_english = english_ratio > 0.1
     
     if not is_group_or_room:
-        if is_english_only:
-            # 如果是純英文回覆，添加Quick Reply按鈕
+        if has_high_english:
+            # 如果英文比例超過10%，添加Quick Reply按鈕
             message = {
                 "type": "text",
                 "text": reply_text,
@@ -221,8 +234,8 @@ async def handle_message(event):
         else:
             push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
     else:
-        if is_english_only:
-            # 如果是純英文回覆，添加Quick Reply按鈕
+        if has_high_english:
+            # 如果英文比例超過10%，添加Quick Reply按鈕
             message = TextSendMessage(
                 text=reply_text,
                 quick_reply=QuickReply(items=[QuickReplyButton(
