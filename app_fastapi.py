@@ -187,10 +187,51 @@ async def handle_message(event):
     if not reply_text:
         reply_text = "抱歉，目前無法提供回應，請稍後再試。"
 
+    # 檢查回覆是否為純英文
+    is_english_only = all(ord(c) < 128 for c in ''.join(c for c in reply_text if c.isalpha()))
+    
     if not is_group_or_room:
-        push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
+        if is_english_only:
+            # 如果是純英文回覆，添加Quick Reply按鈕
+            message = {
+                "type": "text",
+                "text": reply_text,
+                "sender": {"name": "代班", "iconUrl": f"{base_url}/static/boticon.png"},
+                "quickReply": {
+                    "items": [{
+                        "type": "action",
+                        "action": {
+                            "type": "message",
+                            "label": "翻譯成中文",
+                            "text": "請將上述內容翻譯成中文"
+                        }
+                    }]
+                }
+            }
+            headers = {
+                "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
+                "Content-Type": "application/json"
+            }
+            body = {"to": user_id, "messages": [message]}
+            try:
+                res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
+                res.raise_for_status()
+            except Exception as e:
+                print(f"❌ 發送失敗: {e}")
+        else:
+            push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
+        if is_english_only:
+            # 如果是純英文回覆，添加Quick Reply按鈕
+            message = TextSendMessage(
+                text=reply_text,
+                quick_reply=QuickReply(items=[QuickReplyButton(
+                    action=MessageAction(label="翻譯成中文", text="請將上述內容翻譯成中文")
+                )])
+            )
+            line_bot_api.reply_message(event.reply_token, message)
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
 
     conversation_history[user_id].append({"role": "assistant", "content": reply_text})
 
