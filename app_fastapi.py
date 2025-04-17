@@ -211,36 +211,35 @@ async def handle_message(event):
                         stock_code,
                         stock_symbol])
     
-    if not is_group_or_room:
-        quick_reply_items = []
-        if has_high_english:
-            quick_reply_items.append({
+    quick_reply_items = []
+    if has_high_english:
+        quick_reply_items.append({
+            "type": "action",
+            "action": {
+                "type": "message",
+                "label": "翻譯成中文",
+                "text": "請將上述內容翻譯成中文"
+            }
+        })
+
+        quick_reply_items.extend([
+            {
                 "type": "action",
                 "action": {
                     "type": "message",
-                    "label": "翻譯成中文",
-                    "text": "請將上述內容翻譯成中文"
+                    "label": "台股大盤",
+                    "text": "大盤"
                 }
-            })
-        if is_stock_query:
-            quick_reply_items.extend([
-                {
-                    "type": "action",
-                    "action": {
-                        "type": "message",
-                        "label": "台股大盤",
-                        "text": "大盤"
-                    }
-                },
-                {
-                    "type": "action",
-                    "action": {
-                        "type": "message",
-                        "label": "美股大盤",
-                        "text": "美股"
-                    }
+            },
+            {
+                "type": "action",
+                "action": {
+                    "type": "message",
+                    "label": "美股大盤",
+                    "text": "美股"
                 }
-            ])
+            }
+        ])
         
         if quick_reply_items:
             message = {
