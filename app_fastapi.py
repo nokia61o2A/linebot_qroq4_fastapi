@@ -222,6 +222,7 @@ async def handle_message(event):
             }
         })
 
+    if is_stock_query:
         quick_reply_items.extend([
             {
                 "type": "action",
@@ -240,40 +241,30 @@ async def handle_message(event):
                 }
             }
         ])
-        
-        if quick_reply_items:
-            message = {
-                "type": "text",
-                "text": reply_text,
-                "sender": {"name": "代班", "iconUrl": f"{base_url}/static/boticon.png"},
-                "quickReply": {
-                    "items": quick_reply_items
-                }
+    
+    if quick_reply_items:
+        message = {
+            "type": "text",
+            "text": reply_text,
+            "sender": {"name": "代班", "iconUrl": f"{base_url}/static/boticon.png"},
+            "quickReply": {
+                "items": quick_reply_items
             }
-            headers = {
-                "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
-                "Content-Type": "application/json"
-            }
-            body = {"to": user_id, "messages": [message]}
-            try:
-                res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
-                res.raise_for_status()
-            except Exception as e:
-                print(f"❌ 發送失敗: {e}")
-        else:
-            push_custom_sender_message(user_id, reply_text, name="代班", icon_url=f"{base_url}/static/boticon.png")
-    else:
-        if has_high_english:
-            # 如果英文比例超過10%，添加Quick Reply按鈕
-            message = TextSendMessage(
-                text=reply_text,
-                quick_reply=QuickReply(items=[QuickReplyButton(
-                    action=MessageAction(label="翻譯成中文", text="請將上述內容翻譯成中文")
-                )])
-            )
-            line_bot_api.reply_message(event.reply_token, message)
-        else:
+        }
+        headers = {
+            "Authorization": f"Bearer {os.getenv('CHANNEL_ACCESS_TOKEN')}",
+            "Content-Type": "application/json"
+        }
+        body = {"to": user_id, "messages": [message]}
+        try:
+            res = httpx.post("https://api.line.me/v2/bot/message/push", headers=headers, json=body)
+            res.raise_for_status()
+        except Exception as e:
+            print(f"❌ 發送失敗: {e}")
+            # 發送失敗時使用一般回覆
             line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
+    else:
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(reply_text))
 
     conversation_history[user_id].append({"role": "assistant", "content": reply_text})
 
