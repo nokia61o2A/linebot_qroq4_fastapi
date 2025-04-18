@@ -1,5 +1,5 @@
 """
-欣欣
+AI 醬
 """
 from fastapi import FastAPI, APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -22,6 +22,7 @@ from my_commands.stock.stock_gpt import stock_gpt
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+print ("=== AI 醬 ===")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -124,22 +125,22 @@ async def handle_message(event):
 
     if not is_group_or_room:            #個人
         show_loading_animation(user_id)
-    else:                               #群組 @名子識別
-        if not msg.startswith('@'):
-            return
-        bot_info = line_bot_api.get_bot_info()
-        bot_name = bot_info.display_name
+    # else:                               #群組 @名子識別
+    #     if not msg.startswith('@'):
+    #         return
+    #     bot_info = line_bot_api.get_bot_info()
+    #     bot_name = bot_info.display_name
 
-        if '@' in msg:
-            at_text = msg.split('@')[1].split()[0] if len(msg.split('@')) > 1 else ''
-            if at_text.lower() not in bot_name.lower():
-                return
-            msg = msg.replace(f'@{at_text}', '').strip()
-        else:
-            return
+    #     if '@' in msg:
+    #         at_text = msg.split('@')[1].split()[0] if len(msg.split('@')) > 1 else ''
+    #         if at_text.lower() not in bot_name.lower():
+    #             return
+    #         msg = msg.replace(f'@{at_text}', '').strip()
+    #     else:
+    #         return
 
-        if not msg:
-            return
+    #     if not msg:
+    #         return
 
     if user_id not in conversation_history:
         conversation_history[user_id] = []
