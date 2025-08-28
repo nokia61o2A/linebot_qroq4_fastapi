@@ -1,11 +1,11 @@
 """
-AI 醬 
+AI 醬 git@github.com-nokia61o2A:nokia61o2A/linebot_qroq4_fastapi.git
 """
 import os
 import re
 import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager 
 
 import httpx
 import requests
@@ -273,5 +273,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     # 啟動時可透過 --log-level 調整日誌等級
     uvicorn.run("app_fastapi:app", host="0.0.0.0", port=port, log_level="info")
-===
-這是我之前完成版 的ai 女友請修改出day FastAPI Echo Bot 階段所需的程式片段
